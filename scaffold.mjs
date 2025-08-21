@@ -1,15 +1,42 @@
 #!/usr/bin/env node
 /**
- * @thaikolja/scaffold-nuxt-4
- * Embedded template Nuxt 4 scaffolder.
+ * @module @thaikolja/scaffold-nuxt-4
+ * @version 1.0.0
+ * @description Deterministic additive scaffolder for Nuxt 4 projects. Intelligently adds template files
+ *   without overwriting existing ones. Supports built-in, Git, or local directory templates,
+ *   with automatic feature detection for `@nuxt/content` and Tailwind CSS, configurable via flags.
  *
- * Enhancements over previous revision:
- *  - Robust fileURLToPath usage (Windows-safe).
- *  - Broader junk exclude (.DS_Store, Thumbs.db, a.txt, backup script).
- *  - Added --version flag.
- *  - Safer embedded template resolution.
- *  - Minor refactor for clarity.
+ * CORE PURPOSE
+ *   - Classify template files vs target (add | skip | exclude).
+ *   - Optionally write changes (default) or simulate (--dry-run).
+ *   - Provide structured JSON (--json) or human console output.
+ *   - Support various template sources (built-in, Git, local directory).
+ *   - Feature gating for `@nuxt/content` and Tailwind CSS.
+ *
+ * USAGE
+ *   npx @thaikolja/scaffold-nuxt-4 [flags]
+ *   (If no flags, copies default template files to current working directory.)
+ *
+ * PRIMARY FLAGS (summarized)
+ *   --all                  Includes all files from the template, ignoring automatic feature detection.
+ *   --with-content         Forces the inclusion of files related to @nuxt/content.
+ *   --without-content      Forces the exclusion of files related to @nuxt/content.
+ *   --with-tailwind        Forces the inclusion of files related to Tailwind CSS.
+ *   --without-tailwind     Forces the exclusion of files related to Tailwind CSS.
+ *   -c, --clean            Excludes INFO.md files from being copied.
+ *   --dry-run              Simulates the scaffolding process without making any changes to the filesystem.
+ *   --list                 Lists all files in the template and their classification (add, skip, exclude).
+ *   --json                 Outputs the results of the scaffolding process in JSON format.
+ *   --debug                Enables debug mode for more verbose output.
+ *   --no-color             Disables color-coded output.
+ *   --include-docs         Includes documentation files (e.g., README.md, LICENSE) in the copy process.
+ *   --template-url=<url>   Specifies the URL of a Git repository or the path to a local directory to use as the template source.
+ *   --template-ref=<ref>   Specifies the branch, tag, or commit to use when cloning a Git repository.
+ *   --template-dir=<dir>   Specifies the subdirectory within the template source that contains the files to be copied.
+ *   -v, --version          Prints the version of the script.
+ *   -h, --help             Displays the help message.
  */
+
 
 import fs              from 'node:fs';
 import path            from 'node:path';
@@ -23,7 +50,7 @@ const MIN_NODE_MAJOR = 18;
 const DEFAULT_REPO_URL = 'https://gitlab.com/thaikolja/scaffold-nuxt-4.git';
 const DEFAULT_REPO_REF = 'main';
 const DEFAULT_TEMPLATE_DIR = 'templates';
-const VERSION = '1.0.1'; // keep in sync with package.json (or read dynamically if desired)
+const VERSION = '1.0.0';
 
 // ---------------- NODE VERSION GUARD ----------------
 (function enforceNodeVersion() {
@@ -58,7 +85,12 @@ for (let i = 0; i < rawArgs.length; i++) {
       longArgs.set(a.slice(2), true);
     }
   } else if (a.startsWith('-')) {
-    flags.add(a);
+    // Support combined short flags like -vhc
+    if (a.length > 2) {
+      for (let j = 1; j < a.length; j++) flags.add(`-${a[j]}`);
+    } else {
+      flags.add(a);
+    }
   } else {
     positional.push(a);
   }
@@ -104,6 +136,7 @@ if (wantVersion) {
 }
 
 if (wantHelp) {
+  // noinspection XmlDeprecatedElement,HtmlDeprecatedTag
   console.log(`
 Scaffold Nuxt 4 (additive).
 
@@ -121,11 +154,14 @@ Flags:
   --debug               Internal state
   --no-color            Disable ANSI colors
   --include-docs        Allow README/LICENSE/CHANGELOG copying
-  --template-url=<url>  Override template repo URL
+  --template-url=<url>  Override template repo URL (can be a local path)
   --template-ref=<ref>  Override ref (branch/tag/commit)
   --template-dir=<dir>  Template subdirectory (default: templates)
   -v, --version         Print version
   -h, --help            Help
+
+Notes:
+  - Short flags can be combined: -vh, -cv, etc.
 
 Env:
   SCAFFOLD_REPO_URL
@@ -164,14 +200,84 @@ if (!fs.existsSync(targetRoot) || !fs.statSync(targetRoot).isDirectory()) {
 const LOCK_NAME = '.scaffold-nuxt-4.lock';
 const lockPath = path.join(targetRoot, LOCK_NAME);
 let lockAcquired = false;
-try {
-  const fd = fs.openSync(lockPath, 'wx');
-  fs.writeFileSync(fd, String(process.pid));
-  lockAcquired = true;
-} catch {
-  console.error('ERROR: Another scaffold process appears active (lock present).');
-  process.exit(EXIT.USAGE_ERROR);
+
+function isProcessAlive(pid) {
+  if (!pid || !Number.isFinite(pid)) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    // ESRCH -> not running; EPERM/others -> assume running
+    return e && e.code !== 'ESRCH';
+  }
 }
+
+function readLockPid(p) {
+  try {
+    const txt = fs.readFileSync(p, 'utf8').trim();
+    const pid = parseInt(txt, 10);
+    return Number.isFinite(pid) ? pid : null;
+  } catch {
+    return null;
+  }
+}
+
+function createLock() {
+  const fd = fs.openSync(lockPath, 'wx');
+  try {
+    fs.writeFileSync(fd, String(process.pid));
+  } finally {
+    try {
+      fs.closeSync(fd);
+    } catch {
+    }
+  }
+  lockAcquired = true;
+}
+
+try {
+  createLock();
+} catch (e) {
+  if (e && e.code === 'EEXIST') {
+    const pid = readLockPid(lockPath);
+    if (isProcessAlive(pid)) {
+      console.error(`ERROR: Another scaffold process appears active (lock: ${lockPath}${pid ? `, pid ${pid}` : ''}).`);
+      process.exit(EXIT.USAGE_ERROR);
+    }
+    try {
+      fs.rmSync(lockPath, {force: true});
+    } catch {
+    }
+    try {
+      createLock();
+    } catch (ee) {
+      console.error(`ERROR: Failed to acquire lock at ${lockPath}: ${ee.message}`);
+      process.exit(EXIT.USAGE_ERROR);
+    }
+  } else {
+    console.error(`ERROR: Failed to create lock at ${lockPath}: ${e?.message || e}`);
+    process.exit(EXIT.USAGE_ERROR);
+  }
+}
+
+// Register signal/exit cleanup so locks/temp dirs don't become immortal
+const SIGNAL_EXIT_CODE = {SIGINT: 130, SIGHUP: 129, SIGTERM: 143};
+let cleaning = false;
+process.once('SIGINT', () => {
+  cleanup();
+  process.exit(SIGNAL_EXIT_CODE.SIGINT);
+});
+process.once('SIGHUP', () => {
+  cleanup();
+  process.exit(SIGNAL_EXIT_CODE.SIGHUP);
+});
+process.once('SIGTERM', () => {
+  cleanup();
+  process.exit(SIGNAL_EXIT_CODE.SIGTERM);
+});
+process.once('exit', () => {
+  cleanup();
+});
 
 // ---------------- NUXT DETECTION ----------------
 const pkgPath = path.join(targetRoot, 'package.json');
@@ -220,6 +326,7 @@ let templateRoot = null;
 let cloneDir = null;
 let tempRoot = null;
 let usedEmbedded = false;
+let cloneMode = null;
 
 function isRemote(url) {
   return /^(?:git@|https?:\/\/)/i.test(url);
@@ -238,6 +345,7 @@ const embedded = localEmbeddedTemplates();
 if (embedded && REPO_URL === DEFAULT_REPO_URL) {
   templateRoot = embedded;
   usedEmbedded = true;
+  cloneMode = 'embedded';
 }
 
 function execGit(args, cwd) {
@@ -265,8 +373,10 @@ function attemptClone(optimized) {
   if (optimized) {
     execGit(['clone', '--depth=1', '--no-tags', '--filter=blob:none', '--sparse', REPO_URL, dir]);
     try {
-      execGit(['sparse-checkout', 'set', '--no-cone', '.'], dir);
+      // Target only the requested template subdir
+      execGit(['sparse-checkout', 'set', '--no-cone', `${REQUESTED_TEMPLATE_SUBDIR}/**`], dir);
     } catch {
+      // Sparse may fail on older git; caller will fallback if needed
     }
   } else {
     execGit(['clone', '--depth=1', '--no-tags', REPO_URL, dir]);
@@ -286,20 +396,27 @@ if (!templateRoot) {
       cleanupAndExit(EXIT.USAGE_ERROR);
     }
     cloneDir = local;
+    cloneMode = 'full';
   } else {
     if (!gitAvailable()) {
       console.error('ERROR: Git not available and no embedded templates.');
       cleanupAndExit(EXIT.USAGE_ERROR);
     }
     try {
-      cloneDir = attemptClone(USE_OPTIMIZED);
       if (USE_OPTIMIZED) {
+        cloneDir = attemptClone(true);
+        cloneMode = 'optimized';
+        // If optimized clone is empty (excluding .git), retry full
         const test = fs.readdirSync(cloneDir).filter(x => x !== '.git');
         if (test.length === 0) {
           if (debug) console.log('[debug] optimized clone empty; retry full');
           fs.rmSync(tempRoot, {recursive: true, force: true});
           cloneDir = attemptClone(false);
+          cloneMode = 'full';
         }
+      } else {
+        cloneDir = attemptClone(false);
+        cloneMode = 'full';
       }
     } catch (e) {
       console.error('ERROR: Clone failed:', e.message);
@@ -472,7 +589,8 @@ excluded.sort((a, b) => a.file.localeCompare(b.file));
 if (listOnly && !jsonOutput) {
   console.log(cyan('=== Template classification ==='));
   console.log('Target:', targetRoot);
-  console.log(`Source: ${usedEmbedded ? 'embedded' : REPO_URL} Ref: ${REPO_REF} Mode: ${usedEmbedded ? 'embedded' : (USE_OPTIMIZED ? 'optimized?' : 'full')}`);
+  const modeForPrint = usedEmbedded ? 'embedded' : (cloneMode || (USE_OPTIMIZED ? 'optimized' : 'full'));
+  console.log(`Source: ${usedEmbedded ? 'embedded' : REPO_URL} Ref: ${REPO_REF} Mode: ${modeForPrint}`);
   console.log(`Flags: all=${forceAll} content=${effectiveContent} tailwind=${effectiveTailwind} cleanInfo=${cleanInfo} includeDocs=${includeDocs} dryRun=${dryRun}`);
   console.log('');
   for (const a of actions) {
@@ -515,7 +633,7 @@ if (jsonOutput) {
     target:    targetRoot,
     source:    usedEmbedded ? 'embedded' : REPO_URL,
     ref:       REPO_REF,
-    mode:      usedEmbedded ? 'embedded' : (USE_OPTIMIZED ? 'optimized' : 'full'),
+    mode:      usedEmbedded ? 'embedded' : (cloneMode || (USE_OPTIMIZED ? 'optimized' : 'full')),
     detected:  {content: detectedContent, tailwind: detectedTailwind},
     effective: {
       content:  effectiveContent,
@@ -548,6 +666,7 @@ console.log(cyan('=== nuxt 4 scaffold ==='));
 console.log('Target:', targetRoot);
 console.log(`Source: ${usedEmbedded ? 'embedded templates' : REPO_URL}`);
 console.log(`Ref: ${REPO_REF}`);
+console.log(`Mode: ${usedEmbedded ? 'embedded' : (cloneMode || (USE_OPTIMIZED ? 'optimized' : 'full'))}`);
 console.log(`Detected deps: content=${detectedContent} tailwind=${detectedTailwind}`);
 console.log(`Effective: content=${effectiveContent} tailwind=${effectiveTailwind} all=${forceAll} cleanInfo=${cleanInfo} includeDocs=${includeDocs} dryRun=${dryRun}`);
 console.log('');
@@ -576,7 +695,9 @@ console.log('');
 cleanupAndExit(errors.length ? EXIT.FILE_ERRORS : EXIT.OK);
 
 // ---------------- CLEANUP ----------------
-function cleanupAndExit(code) {
+function cleanup() {
+  if (cleaning) return;
+  cleaning = true;
   if (tempRoot) {
     try {
       fs.rmSync(tempRoot, {recursive: true, force: true});
@@ -589,5 +710,9 @@ function cleanupAndExit(code) {
     } catch {
     }
   }
+}
+
+function cleanupAndExit(code) {
+  cleanup();
   process.exit(code);
 }
