@@ -2,16 +2,14 @@
 
 [![NPM Version](https://img.shields.io/npm/v/@thaikolja/scaffold-nuxt-4)](https://www.npmjs.com/package/@thaikolja/scaffold-nuxt-4) [![Node.js Version](https://img.shields.io/node/v/@thaikolja/scaffold-nuxt-4.svg)](https://nodejs.org/en/) [![License](https://img.shields.io/npm/l/@thaikolja/scaffold-nuxt-4)](https://gitlab.com/thaikolja/scaffold-nuxt-4/-/blob/main/LICENSE)
 
-A deterministic scaffolder for **Nuxt 4** that adds template files intelligently without overwriting existing ones. Supports built-in, Git, or local templates and automatically detects features like @nuxt/content and Tailwind CSS, with options to customize via flags.
+**Scaffold Nuxt 4** helps you to quickly set up a *full* Nuxt 4 installation. Nuxt 4 features [a new directory structure](https://nuxt.com/docs/4.x/guide/directory-structure/) that is different from Nuxt 3, but only installs the necessary folders and files, thereby omitting the entire directory structure. This script intelligently creates all new folders and files while avoiding overwriting existing ones to have all folders and files Nuxt 4 uses.
 
-## Overview
-
-This script is designed to make it easy to start a new Nuxt 4 project with a standard set of template files. It is "additive", which means it will only add files that don't already exist in your project. This makes it safe to run multiple times. The script can detect if you are using `@nuxt/content` or `tailwindcss` and will automatically include the relevant template files. You can also override this behavior with command-line flags.
+The Scaffold Nuxt 4 script automatically detects the popular modules [Nuxt Content](https://content.nuxt.com/docs/getting-started/installation) (`@nuxt/content`) and [Tailwind CSS](https://nuxt.com/modules/tailwindcss) (`@nuxtjs/tailwindcss`), with options to customize through flags. By default, each folder contains an `INFO.md` file that explains the type of files intended for this location.
 
 ## Features
 
--   **Idempotent:** Safely run the script multiple times without overwriting existing files.
--   **Feature Detection:** Automatically detects `@nuxt/content` and `tailwindcss`.
+-   **Safe:** Run the script multiple times without overwriting existing files.
+-   **Module Detection:** Automatically detects `@nuxt/content` and `@nuxtjs/tailwindcss` and creates files and folders accordingly.
 -   **Flexible Template Sources:** Use the built-in template, a remote Git repository, or a local directory.
 -   **Dry Run Mode:** Preview the changes without actually modifying any files.
 -   **JSON Output:** Get the results in JSON format for use in other scripts.
@@ -27,39 +25,45 @@ npx @thaikolja/scaffold-nuxt-4 [flags] [targetPath]
 
 If no `targetPath` is provided, the current working directory will be used.
 
+> [!TIP]
+>
+> Node.js has several package managers, and you're not bound to `npm`. I recommend [Bun](https://bun.com/docs/installation) because of its speed. Bun uses the command `bunx` as an equivalent to `npx`.
+
 ## Examples
 
-**Scaffold the current directory:**
+Scaffold the current directory:
 
 ```bash
 npx @thaikolja/scaffold-nuxt-4
 ```
 
-**Scaffold a specific directory:**
+Scaffold a specific directory:
 
 ```bash
 npx @thaikolja/scaffold-nuxt-4 ./my-nuxt-project
 ```
 
-**Scaffold with Tailwind CSS files, even if not detected:**
+Scaffold with Tailwind CSS files, even if **not** detected:
 
 ```bash
 npx @thaikolja/scaffold-nuxt-4 --with-tailwind
 ```
 
-**Preview the files that would be added without actually copying them:**
+Preview the files that would be added without actually copying them:
 
 ```bash
 npx @thaikolja/scaffold-nuxt-4 --dry-run
 ```
 
-**Use a custom template from a Git repository:**
+Use a custom template from a Git repository:
 
 ```bash
 npx @thaikolja/scaffold-nuxt-4 --template-url=https://github.com/user/template.git --template-ref=develop
 ```
 
 ## Flags
+
+Flags allow you to customize the script. **All flags are optional**.
 
 | Flag | Alias | Description |
 | :--- | :--- | :--- |
@@ -85,21 +89,31 @@ npx @thaikolja/scaffold-nuxt-4 --template-url=https://github.com/user/template.g
 
 The script can use templates from three types of sources, in the following order of priority:
 
-1.  **Embedded:** The script comes with a built-in template. This is the default and is used when no other source is specified.
-2.  **Git Repository:** You can specify a remote Git repository using the `--template-url` and `--template-ref` flags.
-3.  **Local Directory:** You can specify a local directory using the `--template-url` flag.
+1.  **Embedded:** The script comes with a built-in template ("skeleton"). This is the default and is used when no other source is specified (recommended).
+2.  **Git Repository:** You can specify a custom remote Git repository using the `--template-url` and `--template-ref` flags.
+3.  **Local Directory:** Despite its name, using the `--template-url` flag can also be applied to a *local* path for the directory structure.
 
 ## Environment Variables
+
+To avoid using flags each time, you can set some values as environmental variables:
 
 -   `SCAFFOLD_REPO_URL`: Overrides the default template repository URL.
 -   `SCAFFOLD_REPO_REF`: Overrides the default template repository branch/tag/commit.
 -   `SCAFFOLD_FAST=1`: Uses a faster, optimized git clone method.
 -   `NO_COLOR=1`: Disables colorized output.
 
+## Author
+
+* **Kolja Nolte** (kolja.nolte@gmail.com)
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a merge request on [GitLab](https://gitlab.com/thaikolja/scaffold-nuxt-4).
 
+## Changelog
+
+For a full changelog, please refer to [CHANGELOG.md](https://gitlab.com/thaikolja/scaffold-nuxt-4/-/blob/main/CHANGELOG.md).
+
 ## License
 
-[MIT](https://gitlab.com/thaikolja/scaffold-nuxt-4/-/blob/main/LICENSE)
+Please see the [MIT](https://gitlab.com/thaikolja/scaffold-nuxt-4/-/blob/main/LICENSE) file for the full license text.
