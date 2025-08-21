@@ -1,0 +1,21 @@
+/**
+ * Tailwind CSS >= v4: Uncomment the following line:
+ */
+
+/*
+ * @import "tailwindcss";
+ *
+ * @theme static {
+ *  --color-example: #f0f0f0;
+ * }
+ */
+
+/** ----- OR ------ */
+
+/**
+ * Tailwind CSS =< v3: Uncomment the following line:
+ */
+
+/* @import "tailwindcss/base"; */
+/* @import "tailwindcss/components"; */
+/* @import "tailwindcss/utilities"; */

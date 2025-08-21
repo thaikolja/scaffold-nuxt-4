@@ -1,0 +1,1 @@
+// Some IDEs require this file to enable autocomplete for Tailwind CSS classes. Tailwind >= 4 does not use this file anymore, but it's still useful if you have problems with your IDE's autocompletion.
