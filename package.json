@@ -1,0 +1,44 @@
+{
+  "name":            "@thaikolja/scaffold-nuxt-4",
+  "version":         "1.0.1",
+  "description":     "Additive Nuxt 4 scaffolder with embedded template set (content/tailwind feature gating).",
+  "type":            "module",
+  "bin":             {
+    "scaffold-nuxt-4": "scaffold.mjs"
+  },
+  "files":           [
+    "scaffold.mjs",
+    "templates/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines":         {
+    "node": ">=18.0.0"
+  },
+  "license":         "MIT",
+  "repository":      {
+    "type": "git",
+    "url":  "git+https://gitlab.com/thaikolja/scaffold-nuxt-4.git"
+  },
+  "homepage":        "https://gitlab.com/thaikolja/scaffold-nuxt-4#readme",
+  "bugs":            {
+    "url": "https://gitlab.com/thaikolja/scaffold-nuxt-4/issues"
+  },
+  "publishConfig":   {
+    "access": "public"
+  },
+  "keywords":        [
+    "nuxt",
+    "nuxt4",
+    "scaffold",
+    "cli",
+    "boilerplate",
+    "template",
+    "content",
+    "tailwind"
+  ],
+  "sideEffects":     false,
+  "dependencies":    {},
+  "devDependencies": {}
+}
