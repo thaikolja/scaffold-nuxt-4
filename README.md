@@ -1,181 +1,119 @@
-# scaffold-nuxt-4
+# Scaffold Nuxt 4
 
-[![Pipeline Status](https://img.shields.io/gitlab/pipeline-status/gitlab.com/thaikolja/scaffold-nuxt-4?branch=main)](https://gitlab.com/thaikolja/scaffold-nuxt-4/-/pipelines)
-[![License](https://img.shields.io/gitlab/license/gitlab.com/thaikolja/scaffold-nuxt-4)](https://gitlab.com/thaikolja/scaffold-nuxt-4/-/blob/main/LICENSE)
-![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-339933?logo=node.js)
+[![NPM Version](https://img.shields.io/npm/v/@thaikolja/scaffold-nuxt-4)](https://www.npmjs.com/package/@thaikolja/scaffold-nuxt-4) [![Node.js Version](https://img.shields.io/node/v/@thaikolja/scaffold-nuxt-4.svg)](https://nodejs.org/en/) [![License](https://img.shields.io/npm/l/@thaikolja/scaffold-nuxt-4)](https://gitlab.com/thaikolja/scaffold-nuxt-4/-/blob/main/LICENSE)
 
-Additive post-create scaffolder for Nuxt 4 projects. Copies only missing files from a template repository. Never overwrites. Feature‑gated (content + tailwind). CI-friendly JSON output. Designed to be boringly reliable.
+**Scaffold Nuxt 4** helps you to quickly set up a *full* Nuxt 4 installation. Nuxt 4 features [a new directory structure](https://nuxt.com/docs/4.x/guide/directory-structure/) that is different from Nuxt 3, but only installs the necessary folders and files, thereby omitting the entire directory structure. This script intelligently creates all new folders and files while avoiding overwriting existing ones to have all folders and files Nuxt 4 uses.
 
-## Why
-You keep rebuilding the same `content/`, tailwind config, docs, and helper structure. This script clones a template (remote or local), classifies files, and only adds what you do not already have. Idempotent. Re-runnable without wrecking anything.
+The Scaffold Nuxt 4 script automatically detects the popular modules [Nuxt Content](https://content.nuxt.com/docs/getting-started/installation) (`@nuxt/content`) and [Tailwind CSS](https://nuxt.com/modules/tailwindcss) (`@nuxtjs/tailwindcss`), with options to customize through flags. By default, each folder contains an `INFO.md` file that explains the type of files intended for this location.
 
 ## Features
-- Additive only: never overwrites existing files.
-- Feature detection: `@nuxt/content`, `tailwindcss`.
-- Force flags to include/exclude features regardless of dependencies.
-- Positional target directory argument.
-- Local or remote template repo (`SCAFFOLD_REPO_URL`).
-- Shallow clone with optional sparse optimization + fallback.
-- `--dry-run`, `--list`, `--json` for safe inspection + automation.
-- ANSI color with opt-out (`--no-color` / `NO_COLOR=1`).
-- Concurrency guard via `.scaffold-nuxt-4.lock` (best-effort).
-- Clean removal of informational files (`--clean` for `INFO.md`).
-- Node >= 18 enforced (top-level ESM, modern APIs).
 
-## Install / Use
-Direct (local copy in repo):
+-   **Safe:** Run the script multiple times without overwriting existing files.
+-   **Module Detection:** Automatically detects `@nuxt/content` and `@nuxtjs/tailwindcss` and creates files and folders accordingly.
+-   **Flexible Template Sources:** Use the built-in template, a remote Git repository, or a local directory.
+-   **Dry Run Mode:** Preview the changes without actually modifying any files.
+-   **JSON Output:** Get the results in JSON format for use in other scripts.
+-   **Colorized Output:** Easy-to-read color-coded output in the terminal.
+
+## Usage
+
+To use the script, run the following command in your Nuxt 4 project's root directory:
+
 ```bash
-node scaffold.mjs
-node scaffold.mjs ~/projects/my-nuxt
-node scaffold.mjs --all --dry-run ./nuxt-app
-node scaffold.mjs --json --all ./nuxt-app > scaffold-report.json
+npx @thaikolja/scaffold-nuxt-4 [flags] [targetPath]
 ```
-If you package later in npm:
+
+If no `targetPath` is provided, the current working directory will be used.
+
+> [!TIP]
+>
+> Node.js has several package managers, and you're not bound to `npm`. I recommend [Bun](https://bun.com/docs/installation) because of its speed. Bun uses the command `bunx` as an equivalent to `npx`.
+
+## Examples
+
+Scaffold the current directory:
+
 ```bash
 npx @thaikolja/scaffold-nuxt-4
 ```
 
-## Flags
-| Flag | Description |
-|------|-------------|
-| `--all` | Force-enable all feature sets (content + tailwind) |
-| `--with-content` / `--without-content` | Override content feature detection |
-| `--with-tailwind` / `--without-tailwind` | Override tailwind detection |
-| `-c`, `--clean` | Exclude all `INFO.md` files |
-| `--dry-run` | Simulate additions (no writes) |
-| `--list` | List classification of all template files |
-| `--json` | Emit JSON summary (machine output) |
-| `--debug` | Internal diagnostic output |
-| `--no-color` | Disable ANSI colors |
-| `-h`, `--help` | Show help |
+Scaffold a specific directory:
 
-## Positional Argument
-Optional final argument = target path (default: current directory):
 ```bash
-node scaffold.mjs ./some/nuxt/project
+npx @thaikolja/scaffold-nuxt-4 ./my-nuxt-project
 ```
-Tilde expansion supported:
+
+Scaffold with Tailwind CSS files, even if **not** detected:
+
 ```bash
-node scaffold.mjs ~/dev/nuxt-site
+npx @thaikolja/scaffold-nuxt-4 --with-tailwind
 ```
+
+Preview the files that would be added without actually copying them:
+
+```bash
+npx @thaikolja/scaffold-nuxt-4 --dry-run
+```
+
+Use a custom template from a Git repository:
+
+```bash
+npx @thaikolja/scaffold-nuxt-4 --template-url=https://github.com/user/template.git --template-ref=develop
+```
+
+## Flags
+
+Flags allow you to customize the script. **All flags are optional**.
+
+| Flag | Alias | Description |
+| :--- | :--- | :--- |
+| `--all` | | Includes all files from the template, ignoring automatic feature detection. |
+| `--with-content` | | Forces the inclusion of files related to @nuxt/content. |
+| `--without-content` | | Forces the exclusion of files related to @nuxt/content. |
+| `--with-tailwind` | | Forces the inclusion of files related to Tailwind CSS. |
+| `--without-tailwind`| | Forces the exclusion of files related to Tailwind CSS. |
+| `--clean` | `-c` | Excludes INFO.md files from being copied. |
+| `--dry-run` | | Simulates the scaffolding process without making any changes to the filesystem. |
+| `--list` | | Lists all files in the template and their classification (add, skip, exclude). |
+| `--json` | | Outputs the results of the scaffolding process in JSON format. |
+| `--debug` | | Enables debug mode for more verbose output. |
+| `--no-color` | | Disables color-coded output. |
+| `--include-docs` | | Includes documentation files (e.g., README.md, LICENSE) in the copy process. |
+| `--template-url` | | Specifies the URL of a Git repository or the path to a local directory to use as the template source. |
+| `--template-ref` | | Specifies the branch, tag, or commit to use when cloning a Git repository. |
+| `--template-dir` | | Specifies the subdirectory within the template source that contains the files to be copied. |
+| `--version` | `-v` | Prints the version of the script. |
+| `--help` | `-h` | Displays the help message. |
+
+## Template Sources
+
+The script can use templates from three types of sources, in the following order of priority:
+
+1.  **Embedded:** The script comes with a built-in template ("skeleton"). This is the default and is used when no other source is specified (recommended).
+2.  **Git Repository:** You can specify a custom remote Git repository using the `--template-url` and `--template-ref` flags.
+3.  **Local Directory:** Despite its name, using the `--template-url` flag can also be applied to a *local* path for the directory structure.
 
 ## Environment Variables
-| Variable | Purpose | Default |
-|----------|---------|---------|
-| `SCAFFOLD_REPO_URL` | Template repo (remote URL or absolute local path) | `https://gitlab.com/thaikolja/scaffold-nuxt-4.git` |
-| `SCAFFOLD_REPO_REF` | Branch / tag / commit | `main` |
-| `SCAFFOLD_FAST=1` | Enable sparse + blob-filter clone (auto fallback) | off |
-| `NO_COLOR=1` | Disable color output | off |
 
-## Output Modes
-Human (default):
-```
-=== nuxt 4 scaffold ===
-Added (or would add):
-  + content/config.ts
-...
-Totals: added=5 skipped=2 excluded=3 errors=0
-```
-List mode:
-```
-node scaffold.mjs --list --all
-[ADD] content/articles/hello.md
-[EXCL-FEAT] tailwind.config.ts (tailwind-off)
-...
-```
-JSON:
-```bash
-node scaffold.mjs --json --all > report.json
-```
-Sample structure:
-```json
-{
-  "target": "/abs/path",
-  "repo": "https://gitlab.com/thaikolja/scaffold-nuxt-4.git",
-  "ref": "main",
-  "mode": "full",
-  "detected": { "content": false, "tailwind": false },
-  "effective": { "content": true, "tailwind": true, "all": true, "cleanInfo": false, "dryRun": false, "listOnly": false },
-  "counts": { "add": 7, "skip": 0, "excluded": 0, "errors": 0 },
-  "added": ["content/index.md"],
-  "actions": [ { "rel": "content/index.md", "action": "add" } ]
-}
-```
+To avoid using flags each time, you can set some values as environmental variables:
 
-## Exit Codes
-| Code | Meaning |
-|------|---------|
-| 0 | Success / help |
-| 1 | Usage / configuration error |
-| 2 | Template repository empty |
-| 3 | Partial success with file copy errors |
+-   `SCAFFOLD_REPO_URL`: Overrides the default template repository URL.
+-   `SCAFFOLD_REPO_REF`: Overrides the default template repository branch/tag/commit.
+-   `SCAFFOLD_FAST=1`: Uses a faster, optimized git clone method.
+-   `NO_COLOR=1`: Disables colorized output.
 
-## Template Strategy
-Keep the template repo minimal and additive. No `package.json` or lock files unless you intend to exclude them anyway (they are auto-excluded).
+## Author
 
-## Recommended .gitignore Addition
-```
-.scaffold-nuxt-4.lock
-```
+* **Kolja Nolte** (kolja.nolte@gmail.com)
 
-## Typical Workflows
-1. Basic scaffold:
-   ```bash
-   node scaffold.mjs
-   ```
-2. Force everything even if deps not installed:
-   ```bash
-   node scaffold.mjs --all
-   ```
-3. Preview without writing:
-   ```bash
-   node scaffold.mjs --all --dry-run
-   ```
-4. CI verification (JSON + error on file copy issues):
-   ```bash
-   node scaffold.mjs --json ./nuxt-app
-   ```
-5. Local template repo:
-   ```bash
-   SCAFFOLD_REPO_URL=/abs/path/to/template node scaffold.mjs --all
-   ```
+## Contributing
 
-## Troubleshooting
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| No files added, zero counts | Template empty or wrong URL | Check `SCAFFOLD_REPO_URL`, run `--debug` |
-| All tailwind files excluded | Tailwind not detected | Install deps or use `--with-tailwind` |
-| `git ... failed` | Missing Git or network/firewall | Install Git / verify remote reachability |
-| Colors unwanted in CI | ANSI pollution | Use `--no-color` or `NO_COLOR=1` |
-| Locked directory warning | Prior run crashed | Remove `.scaffold-nuxt-4.lock` |
+Contributions are welcome! Please open an issue or submit a merge request on [GitLab](https://gitlab.com/thaikolja/scaffold-nuxt-4).
 
-## Safety Guarantees
-- Never overwrites existing files.
-- Exclusions are explicit and consistent.
-- Fails fast on unusable target or empty template.
-- Partial errors surface as exit code 3 with granular list.
+## Changelog
 
-## Roadmap (Optional)
-- Glob-based feature groups
-- Pluggable filters
-- Overwrite whitelist flag (if you decide to allow it)
+For a full changelog, please refer to [CHANGELOG.md](https://gitlab.com/thaikolja/scaffold-nuxt-4/-/blob/main/CHANGELOG.md).
 
 ## License
-MIT (see repository LICENSE file). Do what you want; just don’t blame this script when you point it at `/` and wonder why nothing happened.
 
-## Minimal package.json Snippet (If Publishing)
-```json
-{
-  "name": "@thaikolja/scaffold-nuxt-4",
-  "version": "0.1.0",
-  "type": "module",
-  "bin": { "scaffold-nuxt-4": "scaffold.mjs" },
-  "engines": { "node": ">=18" }
-}
-```
-
-## Philosophy
-Add the structural cruft once. Re-run safely. Ship faster. Avoid the ritualistic copy/paste liturgy.
-
----
-If this script wakes you up at 3 AM, something upstream failed harder. This one is intentionally dull.
+Please see the [MIT](https://gitlab.com/thaikolja/scaffold-nuxt-4/-/blob/main/LICENSE) file for the full license text.
